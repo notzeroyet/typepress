@@ -1,0 +1,1340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TypePress</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo+Black&family=Bebas+Neue&family=Oswald:wght@600&family=League+Spartan:wght@800&family=Playfair+Display:wght@600&family=DM+Serif+Display&family=Alfa+Slab+One&family=Graduate&family=Great+Vibes&family=Dancing+Script:wght@600&family=Caveat:wght@700&family=Shadows+Into+Light&family=Patrick+Hand&family=Reenie+Beanie&family=Permanent+Marker&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#14151a; --panel:#1e2028; --panel2:#262935; --line:#33374a;
+    --text:#e8e9ee; --dim:#9aa0b4; --acc:#e8c15a; --acc-ink:#1a1405;
+  }
+  /* Not Zero Yet brand look (the default since November 5, 2026): light controls column,
+     brand red #ce5a57 buttons, dark navy preview panel as the dual tone accent. The older
+     dark look with yellow buttons only shows with ?theme=dark. ?theme=light still works. */
+  body.theme-light{
+    --bg:#1a1d23; --panel:#ffffff; --panel2:#eef0f3; --line:#dde3ea;
+    --text:#1a1d23; --dim:#5b6675; --acc:#ce5a57; --acc-ink:#ffffff;
+    /* Sliders and ticked checkboxes in the dark navy of the preview panel, not the browser's bright blue. */
+    color-scheme:light; accent-color:#1a1d23;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:var(--bg); color:var(--text); font:14px/1.45 Inter, system-ui, sans-serif; height:100vh; display:flex; overflow:hidden;}
+  aside{width:clamp(340px, 27vw, 490px); min-width:340px; background:var(--panel); border-right:1px solid var(--line); display:flex; flex-direction:column; overflow:hidden;}
+  .side-scroll{flex:1; overflow-y:auto; padding:18px 18px 24px;}
+  .side-footer{flex-shrink:0; border-top:1px solid var(--line); background:var(--panel); padding:12px 18px; box-shadow:0 -8px 16px rgba(0,0,0,.12);}
+  .side-footer .actions{display:flex; gap:8px;}
+  .side-footer .btn{margin-top:0; flex:1;}
+  .side-footer #status{margin-top:8px;}
+  main{flex:1; overflow-y:auto; padding:18px;}
+  h1{font-size:16px; letter-spacing:.5px; margin-bottom:2px;}
+  .sub{color:var(--dim); font-size:12px; margin-bottom:12px;}
+  .tabs{display:grid; grid-template-columns:repeat(auto-fit, minmax(84px, 1fr)); gap:6px; margin-bottom:10px;}
+  .tab{text-align:center; padding:9px 6px; background:var(--panel2); border:1px solid var(--line); border-radius:8px; cursor:pointer; font-size:13px; color:var(--dim); white-space:nowrap;}
+  .tab.sel{background:var(--acc); color:var(--acc-ink); font-weight:600; border-color:var(--acc);}
+  label.head{display:block; font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--dim); margin:16px 0 6px;}
+  textarea{width:100%; min-height:150px; background:var(--panel2); color:var(--text); border:1px solid var(--line); border-radius:8px; padding:10px; font:13px/1.5 ui-monospace, Menlo, monospace; resize:vertical;}
+  select,input[type=text]{width:100%; background:var(--panel2); color:var(--text); border:1px solid var(--line); border-radius:8px; padding:8px;}
+  input[type=range]{width:100%;}
+  .row{display:flex; gap:8px; align-items:center;}
+  .row > *{flex:1;}
+  .swatches{display:flex; gap:6px; flex-wrap:wrap;}
+  .sw{width:26px; height:26px; border-radius:6px; border:2px solid transparent; cursor:pointer;}
+  .sw.sel{border-color:var(--acc);}
+  .btn{display:block; width:100%; text-align:center; background:var(--acc); color:var(--acc-ink); font-weight:600; border:none; border-radius:8px; padding:11px; cursor:pointer; margin-top:14px; font-size:14px;}
+  .btn.ghost{background:var(--panel2); color:var(--text); border:1px solid var(--line);}
+  .hint{color:var(--dim); font-size:11px; margin-top:4px;}
+  .grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(240px,1fr)); gap:14px;}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:10px; overflow:hidden;}
+  .card canvas{width:100%; display:block;}
+  .card .bar{display:flex; justify-content:space-between; align-items:center; padding:8px 10px;}
+  .card .bar span{font-size:11px; color:var(--dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:70%;}
+  .card .bar button{background:var(--panel2); color:var(--text); border:1px solid var(--line); border-radius:6px; padding:4px 10px; cursor:pointer; font-size:11px;}
+  .checkline{display:flex; gap:8px; align-items:center; margin-top:8px; font-size:13px;}
+  .checkline input{width:auto;}
+  #status{color:var(--dim); font-size:12px; margin-top:8px; min-height:16px;}
+  .two{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+  .m1,.m2,.m3,.m4,.m5{display:none;}
+  body[data-mode="1"] .m1{display:block;}
+  body[data-mode="2"] .m2{display:block;}
+  body[data-mode="3"] .m3{display:block;}
+  body[data-mode="4"] .m4{display:block;}
+  body[data-mode="5"] .m5{display:block;}
+  body[data-mode="2"] .two.m2{display:grid;}
+  body[data-mode="3"] .two.m3{display:grid;}
+  /* Free and open source note at the very bottom of the controls column. */
+  .support{border-top:1px solid var(--line); margin-top:22px; padding-top:14px;}
+  .support h2{font-size:13px; margin-bottom:4px;}
+  .support p{color:var(--dim); font-size:12px;}
+  .support .links{display:grid; gap:6px; margin-top:10px;}
+  .support .btn{margin-top:0; padding:8px; font-size:13px; font-weight:600; text-decoration:none;}
+  .support #supportNote{min-height:14px;}
+</style>
+</head>
+<body data-mode="1">
+<script>if(new URLSearchParams(location.search).get('theme')!=='dark')document.body.classList.add('theme-light');</script>
+<aside>
+  <div class="side-scroll">
+  <h1>TypePress</h1>
+  <div class="sub">Bulk Typography Designs</div>
+
+  <div class="tabs">
+    <div class="tab sel" id="tab1">1 · Text</div>
+    <div class="tab" id="tab2">2 · Graphic</div>
+    <div class="tab" id="tab3">3 · Pattern</div>
+    <div class="tab" id="tab4">4 · Block</div>
+    <div class="tab" id="tab5">5 · Symbol</div>
+  </div>
+
+  <div class="m1">
+    <label class="head">Designs (blank line = new design)</label>
+    <textarea id="input">THE THINGS
+THAT ARE
+MEANT FOR YOU
+WILL STAY.
+
+plot twist:
+the rest of
+your life is
+the good part.
+
+YOU LOSE MORE
+BY *NOT* TRYING
+THAN BY
+TRYING
+- (respectfully)</textarea>
+    <div class="hint">*word* = accent color · _word_ = underline · line starting with "- " = small sub line</div>
+  </div>
+
+  <div class="m2">
+    <label class="head">Designs (--- separates top text from bottom text)</label>
+    <textarea id="input2">Defying
+Currents
+---
+
+how come it's always
+"you're autistic"
+and not
+---
+"thank you for telling me
+everything you know about
+*ORCAS*"</textarea>
+    <div class="hint">Blank line = new design · lines above --- go over the graphic, lines below go under it · same *accent* / _underline_ / "- " small line syntax</div>
+
+    <label class="head">Graphic (applies to every design)</label>
+    <input type="file" id="imgUpload" accept="image/*" style="font-size:11px;">
+    <div class="checkline"><button class="btn ghost" id="imgClear" style="margin-top:4px; padding:6px;">Remove Graphic</button></div>
+    <div class="hint">No graphic uploaded = the space is still reserved (dashed outline in preview only, empty in export)</div>
+  </div>
+
+  <div class="m3">
+    <label class="head">Designs (blank line = new design)</label>
+    <textarea id="input3">COZY
+- season
+
+OVERTHINKER
+
+EFFORT
+COMPOUNDS</textarea>
+    <div class="hint">Big statement words work best · line starting with "- " = small sub line</div>
+
+    <label class="head">Style</label>
+    <select id="style3">
+      <option value="pattern-outline" selected>Pattern fill + solid border</option>
+      <option value="pattern">Pattern fill only</option>
+      <option value="outline">Solid border, empty inside</option>
+      <option value="embroidery">Fake embroidery border</option>
+    </select>
+    <div class="hint">Embroidery and border styles look best with wide fonts (League Spartan, Archivo Black) and a touch of letter spacing; condensed fonts like Bebas close up.</div>
+
+    <label class="head">Pattern (tiles behind the letters)</label>
+    <input type="file" id="patUpload" accept="image/*" style="font-size:11px;">
+    <div class="checkline"><button class="btn ghost" id="patClear" style="margin-top:4px; padding:6px;">Remove Pattern</button></div>
+    <div class="hint">A built-in leopard tile loads by default. Upload a seamless tile (floral, leopard, checkerboard…) to replace it; Remove pattern = solid ink fill.</div>
+  </div>
+
+  <div class="two m3" style="margin-top:8px;">
+    <div>
+      <div class="hint">Pattern tile size</div>
+      <input type="range" id="pScale" min="8" max="120" value="30">
+    </div>
+    <div>
+      <div class="hint">Arch / bend</div>
+      <input type="range" id="curve3" min="-60" max="60" value="0">
+    </div>
+    <div>
+      <div class="hint">Border thickness</div>
+      <input type="range" id="border3" min="0" max="12" value="2">
+    </div>
+    <div>
+      <div class="hint">Distress</div>
+      <input type="range" id="distress" min="0" max="100" value="0">
+    </div>
+  </div>
+
+  <div class="m4">
+    <label class="head">Designs (blank line = new design)</label>
+    <textarea id="input4">I'M HERE BECAUSE
+YOU BROKE SOMETHING
+
+I'M HERE BECAUSE
+YOU ORDERED FOOD</textarea>
+    <div class="hint">Every line slams edge to edge at its own size · "- " = small sub line</div>
+    <div class="two" style="margin-top:8px;">
+      <div>
+        <div class="hint">Distress</div>
+        <input type="range" id="distress4" min="0" max="100" value="55">
+      </div>
+    </div>
+  </div>
+
+  <div class="m5">
+    <label class="head">Designs (blank line = new design)</label>
+    <textarea id="input5">INSERT
+FEET
+HERE</textarea>
+    <div class="hint">Solid symbol + text stack, all one ink color · "- " = small sub line</div>
+    <div class="two" style="margin-top:8px;">
+      <div>
+        <div class="hint">Symbol</div>
+        <select id="symType">
+          <option value="arrow-up" selected>Arrow up</option>
+          <option value="arrow-down">Arrow down</option>
+          <option value="heart">Heart</option>
+          <option value="star">Star</option>
+          <option value="none">None</option>
+        </select>
+      </div>
+      <div>
+        <div class="hint">Position</div>
+        <select id="symPos">
+          <option value="above" selected>Above text</option>
+          <option value="below">Below text</option>
+        </select>
+      </div>
+      <div>
+        <div class="hint">Symbol size</div>
+        <input type="range" id="symScale" min="15" max="60" value="32">
+      </div>
+      <div>
+        <div class="hint">Distress</div>
+        <input type="range" id="distress5" min="0" max="100" value="0">
+      </div>
+    </div>
+  </div>
+
+  <div class="two m2" style="margin-top:8px;">
+    <div>
+      <div class="hint">Curve top text</div>
+      <input type="range" id="curveTop" min="-60" max="60" value="0">
+    </div>
+    <div>
+      <div class="hint">Curve bottom text</div>
+      <input type="range" id="curveBottom" min="-60" max="60" value="0">
+    </div>
+    <div>
+      <div class="hint">Graphic size</div>
+      <input type="range" id="gScale" min="20" max="90" value="55">
+    </div>
+    <div>
+      <div class="hint">Graphic up / down</div>
+      <input type="range" id="gOffset" min="-20" max="20" value="0">
+    </div>
+    <div>
+      <div class="hint">Shrink biggest lines</div>
+      <input type="range" id="shrinkBig" min="0" max="40" value="18">
+    </div>
+    <div>
+      <div class="hint">&nbsp;</div>
+      <div class="hint">Pulls short, oversized lines down (% vs full width fill)</div>
+    </div>
+    <div>
+      <div class="hint">Top text sizing</div>
+      <select id="topFit">
+        <option value="perline" selected>Each line fills width</option>
+        <option value="uniform">Uniform (fit longest)</option>
+      </select>
+    </div>
+    <div>
+      <div class="hint">Bottom text sizing</div>
+      <select id="bottomFit">
+        <option value="uniform" selected>Uniform (fit longest)</option>
+        <option value="perline">Each line fills width</option>
+      </select>
+    </div>
+  </div>
+
+  <label class="head">Font</label>
+  <select id="font">
+    <optgroup label="Varsity (collegiate)">
+      <option value="Graduate|400" selected>Graduate</option>
+    </optgroup>
+    <optgroup label="Bold sans (front line, easy read)">
+      <option value="Archivo Black|400">Archivo Black</option>
+      <option value="Anton|400">Anton</option>
+      <option value="Bebas Neue|400">Bebas Neue</option>
+      <option value="Oswald|600">Oswald SemiBold</option>
+      <option value="League Spartan|800">League Spartan Heavy</option>
+    </optgroup>
+    <optgroup label="Serif (marine tee look)">
+      <option value="DM Serif Display|400">DM Serif Display</option>
+      <option value="Playfair Display|600">Playfair Display</option>
+      <option value="Alfa Slab One|400">Alfa Slab One</option>
+    </optgroup>
+    <optgroup label="Handwriting (back of shirt notes)">
+      <option value="Caveat|700">Caveat</option>
+      <option value="Shadows Into Light|400">Shadows Into Light</option>
+      <option value="Patrick Hand|400">Patrick Hand</option>
+      <option value="Reenie Beanie|400">Reenie Beanie</option>
+      <option value="Permanent Marker|400">Permanent Marker</option>
+    </optgroup>
+    <optgroup label="Custom uploads" id="customGroup"></optgroup>
+  </select>
+  <div class="checkline">
+    <input type="file" id="fontUpload" accept=".ttf,.otf,.woff,.woff2" style="font-size:11px;">
+  </div>
+  <div class="hint">Upload your own font (bring your own license)</div>
+
+  <label class="head">Sub line font (lines starting with "- ")</label>
+  <select id="subFont">
+    <option value="" >Same as main font</option>
+    <optgroup label="Elegant script">
+      <option value="Great Vibes|400" selected>Great Vibes</option>
+      <option value="Dancing Script|600">Dancing Script</option>
+    </optgroup>
+    <optgroup label="Sans serif">
+      <option value="Inter|600">Inter</option>
+      <option value="Bebas Neue|400">Bebas Neue</option>
+      <option value="Oswald|600">Oswald SemiBold</option>
+      <option value="Archivo Black|400">Archivo Black</option>
+    </optgroup>
+    <optgroup label="Handwriting">
+      <option value="Caveat|700">Caveat</option>
+      <option value="Shadows Into Light|400">Shadows Into Light</option>
+    </optgroup>
+  </select>
+  <div class="hint">The COZY / season move: big varsity main word, script or sans sub line</div>
+
+  <label class="head">Ink color (exports = this color + a white pair)</label>
+  <div class="swatches" id="inkSwatches"></div>
+  <div class="row" style="margin-top:6px;">
+    <input type="color" id="ink" value="#1a1a1a">
+    <input type="color" id="accent" value="#c0392b" title="Accent color for *word*">
+  </div>
+  <div class="hint">Left: ink · right: accent for *emphasis*</div>
+
+  <label class="head">Case</label>
+  <select id="case">
+    <option value="none">As typed</option>
+    <option value="upper">UPPERCASE</option>
+    <option value="lower">lowercase</option>
+  </select>
+
+  <label class="head">Layout</label>
+  <div class="two">
+    <div>
+      <div class="hint">Width fill</div>
+      <input type="range" id="widthFill" min="50" max="100" value="85">
+    </div>
+    <div>
+      <div class="hint">Line spacing</div>
+      <input type="range" id="lineH" min="90" max="170" value="115">
+    </div>
+    <div>
+      <div class="hint">Letter spacing</div>
+      <input type="range" id="letterSp" min="-4" max="16" value="0">
+    </div>
+    <div>
+      <div class="hint">Placement</div>
+      <select id="placement">
+        <option value="top">Upper back</option>
+        <option value="center">Center</option>
+      </select>
+    </div>
+    <div>
+      <div class="hint">Sub line spacing</div>
+      <input type="range" id="subGap" min="-20" max="20" value="3">
+    </div>
+    <div>
+      <div class="hint">Sub line size (modes 3 to 5)</div>
+      <input type="range" id="subScale" min="15" max="70" value="35">
+    </div>
+  </div>
+  <div class="hint">Sub line = any line starting with "- ": spacing moves it closer or further down; size is % of the main word</div>
+
+  <label class="head">Brand signature</label>
+  <div class="checkline"><input type="checkbox" id="sigOn"> <span>Show Under Design</span></div>
+  <input type="text" id="sigText" value="merch nook" style="margin-top:6px;">
+  <select id="sigFont" style="margin-top:6px;">
+    <option value="Caveat|700" selected>Caveat</option>
+    <option value="Shadows Into Light|400">Shadows Into Light</option>
+    <option value="Archivo Black|400">Archivo Black</option>
+    <option value="Bebas Neue|400">Bebas Neue</option>
+  </select>
+
+  <label class="head">Preview shirt color</label>
+  <div class="swatches" id="shirtSwatches"></div>
+  <div class="hint" style="margin-top:10px;">Every export = selected ink color + soft white pair (white ink pairs with black instead) · 4500 × 5400 px, transparent, 300 DPI · never pure #000 or #FFF</div>
+
+  <section class="support" aria-labelledby="free">
+    <h2 id="free">This Tool is Free and Open Source</h2>
+    <p>You don't pay for it and there's nothing to sign up for. You can download your own copy from GitHub, and the instructions there show you how to open it in your own browser. If you've found value and would like to show support, you can buy me a coffee. Your support is highly appreciated! Video tutorials for every tool are on the Not Zero Yet YouTube channel.</p>
+    <div class="links">
+      <a class="btn ghost" id="getGithub" href="#" target="_blank" rel="noopener">Download from GitHub</a>
+      <a class="btn ghost" id="getCoffee" href="#" target="_blank" rel="noopener">Buy Me a Coffee</a>
+      <a class="btn ghost" id="getYoutube" href="#" target="_blank" rel="noopener">Subscribe on YouTube</a>
+    </div>
+    <div class="hint" id="supportNote" aria-live="polite"></div>
+  </section>
+  </div>
+
+  <div class="side-footer">
+    <div class="actions">
+      <button class="btn" id="renderBtn">Generate</button>
+      <button class="btn ghost" id="zipBtn">Download Zip</button>
+    </div>
+    <div id="status"></div>
+  </div>
+</aside>
+
+<main>
+  <div class="grid" id="grid"></div>
+</main>
+
+<script>
+// Footer links. An empty link shows "coming soon" until the real page exists.
+(function(){
+  const SUPPORT_LINKS = {
+    getGithub: "",
+    getCoffee: "",
+    getYoutube: "https://www.youtube.com/@NotZeroYet?sub_confirmation=1"
+  };
+  Object.keys(SUPPORT_LINKS).forEach(function(id){
+    const a = document.getElementById(id), url = SUPPORT_LINKS[id];
+    if (url) { a.href = url; return; }
+    a.addEventListener('click', function(e){ e.preventDefault(); document.getElementById('supportNote').textContent = 'This link is coming soon.'; });
+  });
+})();
+</script>
+<script>
+const EXPORT_W = 4500, EXPORT_H = 5400;
+const $ = id => document.getElementById(id);
+let mode = 1;
+let graphicImg = null;
+let patternImg = null;
+
+const INKS = ['#1a1a1a','#ffffff','#7b1113','#c0392b','#f5efdf','#243a63','#3e4a2e','#d88fa4'];
+const SHIRTS = [
+  {c:'#f5f2ec', n:'white'}, {c:'#1c1c1e', n:'black'}, {c:'#d9c9a3', n:'sand'},
+  {c:'#6b6b4a', n:'olive'}, {c:'#eadb60', n:'butter'}, {c:'#b8c4cf', n:'blue'}
+];
+let shirtBg = SHIRTS[0].c;
+
+function buildSwatches(){
+  INKS.forEach(c=>{
+    const d=document.createElement('div'); d.className='sw'; d.style.background=c;
+    d.onclick=()=>{ $('ink').value=c; render(); };
+    $('inkSwatches').appendChild(d);
+  });
+  SHIRTS.forEach((s,i)=>{
+    const d=document.createElement('div'); d.className='sw'+(i===0?' sel':''); d.style.background=s.c; d.title=s.n;
+    d.onclick=()=>{ shirtBg=s.c; document.querySelectorAll('#shirtSwatches .sw').forEach(x=>x.classList.remove('sel')); d.classList.add('sel'); render(); };
+    $('shirtSwatches').appendChild(d);
+  });
+}
+
+// ---------- parsing ----------
+function parseLines(text){
+  return text.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{
+    let small=false;
+    if(l.startsWith('- ')){ small=true; l=l.slice(2); }
+    return {raw:l, small};
+  });
+}
+function parseDesigns(raw){
+  return raw.replace(/\r/g,'').split(/\n\s*\n/).map(b=>b.trim()).filter(Boolean)
+    .map(block=>({ lines: parseLines(block) }));
+}
+function parseDesigns2(raw){
+  return raw.replace(/\r/g,'').split(/\n\s*\n/).map(b=>b.trim()).filter(Boolean).map(block=>{
+    const all = block.split('\n');
+    const idx = all.findIndex(l=>l.trim()==='---');
+    const topT = idx===-1 ? block : all.slice(0,idx).join('\n');
+    const botT = idx===-1 ? '' : all.slice(idx+1).join('\n');
+    return { top: parseLines(topT), bottom: parseLines(botT) };
+  });
+}
+
+function transformCase(s){
+  const m = $('case').value;
+  if(m==='upper') return s.toUpperCase();
+  if(m==='lower') return s.toLowerCase();
+  return s;
+}
+function parseSegments(line){
+  const parts = line.split(/(\*[^*]+\*|_[^_]+_)/g).filter(x=>x!=='');
+  return parts.map(p=>{
+    if(p.length>1 && p.startsWith('*') && p.endsWith('*')) return {text:p.slice(1,-1), accent:true, underline:false};
+    if(p.length>1 && p.startsWith('_') && p.endsWith('_')) return {text:p.slice(1,-1), accent:false, underline:true};
+    return {text:p, accent:false, underline:false};
+  });
+}
+function fontSpec(){ const [fam,w] = $('font').value.split('|'); return {fam,w}; }
+function sigSpec(){ const [fam,w] = $('sigFont').value.split('|'); return {fam,w}; }
+function subFontSpec(){
+  const v = $('subFont').value;
+  if(!v) return null;
+  const [fam,w] = v.split('|'); return {fam,w};
+}
+// font for one line: sub lines can use their own font
+function lineFontFor(line, fam, weight){
+  const sub = subFontSpec();
+  return (line.small && sub) ? {fam:sub.fam, w:sub.w} : {fam, w:weight};
+}
+
+// ---------- print safe ----------
+const SAFE_BLACK = '#1c1c1c', SAFE_WHITE = '#f6f4ef';
+function printSafe(hex){
+  const v = hex.replace('#','');
+  const r=parseInt(v.slice(0,2),16), g=parseInt(v.slice(2,4),16), b=parseInt(v.slice(4,6),16);
+  if(r<=16 && g<=16 && b<=16) return SAFE_BLACK;
+  if(r>=245 && g>=245 && b>=245) return SAFE_WHITE;
+  return hex;
+}
+
+// ---------- line drawing ----------
+function setFont(ctx, fs, fam, weight, lsEm){
+  ctx.font = `${weight} ${fs}px "${fam}"`;
+  ctx.letterSpacing = (lsEm*fs)+'px';
+}
+
+function drawStraightLine(ctx, segs, fs, W, y, ink, accent, fam, weight, lsEm, opts={}){
+  setFont(ctx, fs, fam, weight, lsEm);
+  const plain = segs.map(s=>s.text).join('');
+  const lw = ctx.measureText(plain).width;
+  let x = (W-lw)/2;
+  for(const seg of segs){
+    const style = opts.styleOverride || (seg.accent ? accent : ink);
+    if(opts.stroke){
+      ctx.strokeStyle = style; ctx.lineWidth = opts.lineWidth; ctx.lineJoin='round'; ctx.miterLimit=2;
+      ctx.strokeText(seg.text, x, y);
+    }else{
+      ctx.fillStyle = style;
+      ctx.fillText(seg.text, x, y);
+      if(seg.underline) ctx.fillRect(x, y + fs*0.1, ctx.measureText(seg.text).width - lsEm*fs, Math.max(2, fs*0.055));
+    }
+    x += ctx.measureText(seg.text).width;
+  }
+}
+
+// curve: -60..60. positive = arch up. Ends sit on the baseline y.
+function drawCurvedLine(ctx, segs, fs, W, y, curve, ink, accent, fam, weight, lsEm, opts={}){
+  if(Math.abs(curve) < 2){ drawStraightLine(ctx, segs, fs, W, y, ink, accent, fam, weight, lsEm, opts); return 0; }
+  ctx.font = `${weight} ${fs}px "${fam}"`;
+  ctx.letterSpacing = '0px';
+  const ls = lsEm*fs;
+  const chars=[];
+  for(const seg of segs) for(const ch of seg.text) chars.push({ch, accent:seg.accent});
+  if(!chars.length) return 0;
+  const widths = chars.map(c=>ctx.measureText(c.ch).width);
+  const lw = widths.reduce((a,b)=>a+b,0) + ls*(chars.length-1);
+  const h = curve/100 * lw * 0.2;
+  const ah = Math.abs(h);
+  const R = ah/2 + (lw*lw)/(8*ah);
+  const theta = 2*Math.asin(Math.min(1, lw/(2*R)));
+  const up = h>0;
+  const cy = up ? y + (R-ah) : y - (R-ah);
+  const cx = W/2;
+  let acc=0;
+  for(let i=0;i<chars.length;i++){
+    const t = (acc + widths[i]/2)/lw;
+    const a = -theta/2 + t*theta;
+    const x = cx + Math.sin(a)*R;
+    const yy = up ? cy - Math.cos(a)*R : cy + Math.cos(a)*R;
+    const rot = up ? a : -a;
+    ctx.save(); ctx.translate(x,yy); ctx.rotate(rot);
+    const style = opts.styleOverride || (chars[i].accent ? accent : ink);
+    if(opts.stroke){
+      ctx.strokeStyle = style; ctx.lineWidth = opts.lineWidth; ctx.lineJoin='round'; ctx.miterLimit=2;
+      ctx.strokeText(chars[i].ch, -widths[i]/2, 0);
+    }else{
+      ctx.fillStyle = style;
+      ctx.fillText(chars[i].ch, -widths[i]/2, 0);
+    }
+    ctx.restore();
+    acc += widths[i] + ls;
+  }
+  return ah; // sagitta, so callers can leave room
+}
+
+function measureRatio(ctx, line, fam, weight, lsEm){
+  const probe=100;
+  setFont(ctx, probe, fam, weight, lsEm);
+  const plain = line.segs.map(s=>s.text).join('');
+  return ctx.measureText(plain).width/probe;
+}
+
+function prepLines(rawLines){
+  return rawLines.map(l=>({ segs: parseSegments(transformCase(l.raw)), small: l.small }));
+}
+
+function drawSignature(ctx, W, y, baseFs, ink){
+  const {fam:sf, w:sw} = sigSpec();
+  const size = baseFs*0.32;
+  ctx.font = `${sw} ${size}px "${sf}"`;
+  ctx.letterSpacing='0px';
+  ctx.fillStyle = ink;
+  const t = $('sigText').value.trim();
+  const tw = ctx.measureText(t).width;
+  ctx.fillText(t, (W-tw)/2, y);
+  return size;
+}
+
+// ---------- mode 1 ----------
+function drawDesign(ctx, design, W, H, bg, forcedInk){
+  const {fam, w:weight} = fontSpec();
+  const ink = forcedInk || $('ink').value;
+  const accent = forcedInk ? printSafe($('accent').value) : $('accent').value;
+  const widthFill = +$('widthFill').value/100;
+  const lineHF = +$('lineH').value/100;
+  const lsEm = +$('letterSp').value/100;
+  const placement = $('placement').value;
+
+  ctx.clearRect(0,0,W,H);
+  if(bg){ ctx.fillStyle=bg; ctx.fillRect(0,0,W,H); }
+  ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+
+  const maxW = W*widthFill;
+  const lines = prepLines(design.lines);
+  let maxRatio=0;
+  for(const line of lines){
+    const lf = lineFontFor(line, fam, weight);
+    const r = measureRatio(ctx, line, lf.fam, lf.w, lsEm);
+    maxRatio = Math.max(maxRatio, line.small ? r*0.5 : r);
+  }
+  if(!maxRatio) return;
+  let fs = maxW/maxRatio;
+  const unitH = l=>(l.small?0.5:1)*lineHF;
+  const totalUnits = lines.reduce((a,l)=>a+unitH(l),0);
+  const sigOn = $('sigOn').checked && $('sigText').value.trim();
+  const sigUnits = sigOn?0.75:0;
+  const maxBlockH = H*0.62;
+  if(fs*(totalUnits+sigUnits) > maxBlockH) fs = maxBlockH/(totalUnits+sigUnits);
+
+  const blockH = fs*(totalUnits+sigUnits);
+  let y = placement==='top' ? H*0.09 + fs*0.85 : (H-blockH)/2 + fs*0.85;
+  const subGapPx = +$('subGap').value/100 * H;
+  for(const line of lines){
+    const size = line.small ? fs*0.5 : fs;
+    const lf = lineFontFor(line, fam, weight);
+    if(line.small) y += subGapPx;
+    drawStraightLine(ctx, line.segs, size, W, y, ink, accent, lf.fam, lf.w, lsEm);
+    y += size*lineHF;
+  }
+  if(sigOn){ y += fs*0.15; drawSignature(ctx, W, y, fs, ink); }
+}
+
+// ---------- mode 2 ----------
+function fitBlock(ctx, lines, maxW, fitMode, fam, weight, lsEm, capFs){
+  // returns [{line, fs}]
+  if(!lines.length) return [];
+  if(fitMode==='perline'){
+    const fitted = lines.map(l=>{
+      const lf = lineFontFor(l, fam, weight);
+      const r = measureRatio(ctx, l, lf.fam, lf.w, lsEm);
+      let fs = r ? maxW/r : capFs;
+      if(l.small) fs *= 0.5;
+      return {line:l, fs: Math.min(fs, capFs)};
+    });
+    // Pull oversized (short) lines back toward the block's smallest fitted size,
+    // so a two-word line doesn't dwarf everything. Never shrinks below that base.
+    const shrink = +$('shrinkBig').value/100;
+    if(shrink > 0){
+      const big = fitted.filter(f=>!f.line.small);
+      if(big.length > 1){
+        const base = Math.min(...big.map(f=>f.fs));
+        for(const f of fitted){
+          if(!f.line.small && f.fs > base) f.fs = Math.max(base, f.fs*(1-shrink));
+        }
+      }
+    }
+    return fitted;
+  }
+  let maxRatio=0;
+  for(const l of lines){
+    const lf = lineFontFor(l, fam, weight);
+    const r = measureRatio(ctx, l, lf.fam, lf.w, lsEm);
+    maxRatio = Math.max(maxRatio, l.small ? r*0.5 : r);
+  }
+  let fs = maxRatio ? maxW/maxRatio : capFs;
+  fs = Math.min(fs, capFs);
+  return lines.map(l=>({line:l, fs: l.small ? fs*0.5 : fs}));
+}
+
+function drawDesign2(ctx, design, W, H, bg, forcedInk){
+  const {fam, w:weight} = fontSpec();
+  const ink = forcedInk || $('ink').value;
+  const accent = forcedInk ? printSafe($('accent').value) : $('accent').value;
+  const widthFill = +$('widthFill').value/100;
+  const lineHF = +$('lineH').value/100;
+  const lsEm = +$('letterSp').value/100;
+  const placement = $('placement').value;
+  const curveTop = +$('curveTop').value;
+  const curveBottom = +$('curveBottom').value;
+  const gScale = +$('gScale').value/100;
+  const gOffset = +$('gOffset').value/100;
+
+  ctx.clearRect(0,0,W,H);
+  if(bg){ ctx.fillStyle=bg; ctx.fillRect(0,0,W,H); }
+  ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+
+  const maxW = W*widthFill;
+  const capFs = H*0.13;
+  const top = fitBlock(ctx, prepLines(design.top), maxW, $('topFit').value, fam, weight, lsEm, capFs);
+  const bottom = fitBlock(ctx, prepLines(design.bottom), maxW, $('bottomFit').value, fam, weight, lsEm, capFs);
+
+  // graphic box
+  const gw = W*gScale;
+  let gh;
+  if(graphicImg) gh = gw * graphicImg.naturalHeight/graphicImg.naturalWidth;
+  else gh = gw*0.75;
+
+  // curve headroom (sagitta estimate off the widest fitted line)
+  const sag = arr => arr.length ? Math.max(...arr.map(f=>{
+    const r = measureRatio(ctx, f.line, fam, weight, lsEm);
+    return Math.abs(r*f.fs)*0.2;
+  })) : 0;
+  const topSag = curveTop>0 && top.length ? sag(top)*curveTop/100 : 0;
+  const botSag = curveBottom<0 && bottom.length ? sag(bottom)*(-curveBottom)/100 : 0;
+
+  const blockH = arr => arr.reduce((a,f)=>a+f.fs*lineHF,0);
+  const topH = blockH(top), botH = blockH(bottom);
+  const gap = W*0.025;
+  const sigOn = $('sigOn').checked && $('sigText').value.trim();
+  const baseFs = Math.max(top[0]?.fs||0, bottom[0]?.fs||0, H*0.04);
+  const sigH = sigOn ? baseFs*0.55 : 0;
+
+  let stack = topSag + topH + (top.length?gap:0) + gh + (bottom.length?gap:0) + botH + botSag + sigH;
+
+  // if too tall, shrink text (graphic stays as set)
+  const avail = H*0.86;
+  if(stack > avail){
+    const textPart = topH + botH;
+    const fixed = stack - textPart;
+    const k = Math.max(0.3, (avail - fixed)/textPart);
+    top.forEach(f=>f.fs*=k); bottom.forEach(f=>f.fs*=k);
+    stack = topSag*k + blockH(top) + (top.length?gap:0) + gh + (bottom.length?gap:0) + blockH(bottom) + botSag*k + sigH;
+  }
+
+  let y = (placement==='top' ? H*0.07 : (H-stack)/2) + topSag;
+
+  const subGapPx = +$('subGap').value/100 * H;
+  for(const f of top){
+    if(f.line.small) y += subGapPx;
+    y += f.fs*0.85;
+    const lf = lineFontFor(f.line, fam, weight);
+    drawCurvedLine(ctx, f.line.segs, f.fs, W, y, f.line.small ? 0 : curveTop, ink, accent, lf.fam, lf.w, lsEm);
+    y += f.fs*(lineHF-0.85);
+  }
+  if(top.length) y += gap;
+
+  // graphic
+  const gx = (W-gw)/2;
+  const gy = y + gOffset*H;
+  if(graphicImg){
+    ctx.drawImage(graphicImg, gx, gy, gw, gh);
+  } else if(bg){
+    ctx.save();
+    ctx.strokeStyle = 'rgba(127,127,127,.55)';
+    ctx.setLineDash([W*0.015, W*0.012]);
+    ctx.lineWidth = Math.max(1, W*0.004);
+    ctx.strokeRect(gx, gy, gw, gh);
+    ctx.restore();
+  }
+  y += gh;
+  if(bottom.length) y += gap;
+
+  for(const f of bottom){
+    if(f.line.small) y += subGapPx;
+    y += f.fs*0.85;
+    const lf = lineFontFor(f.line, fam, weight);
+    drawCurvedLine(ctx, f.line.segs, f.fs, W, y, f.line.small ? 0 : curveBottom, ink, accent, lf.fam, lf.w, lsEm);
+    y += f.fs*(lineHF-0.85);
+  }
+
+  if(sigOn){ y += baseFs*0.5; drawSignature(ctx, W, y, baseFs, ink); }
+}
+
+// ---------- mode 3: pattern press ----------
+function shade(hex, amt){ // amt -1..1: negative darkens, positive lightens
+  let v = hex.replace('#','');
+  if(v.length!==6) return hex;
+  const t = amt<0 ? 0 : 255, a = Math.abs(amt);
+  const ch = i=>{
+    const c = parseInt(v.slice(i,i+2),16);
+    return Math.round(c + (t-c)*a);
+  };
+  return `rgb(${ch(0)},${ch(2)},${ch(4)})`;
+}
+function mulberry32(seed){
+  return function(){
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed>>>15, 1 | seed);
+    t = t + Math.imul(t ^ t>>>7, 61 | t) ^ t;
+    return ((t ^ t>>>14) >>> 0) / 4294967296;
+  };
+}
+function seedFrom(str){
+  let h = 2166136261;
+  for(let i=0;i<str.length;i++){ h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h>>>0;
+}
+
+// built-in leopard tile so pattern press previews something out of the box
+// (procedural, seeded, seamless; no licensed asset baked into the file)
+function makeDefaultPattern(cb){
+  const s=320, c=document.createElement('canvas'); c.width=s; c.height=s;
+  const x=c.getContext('2d'); const rnd=mulberry32(20260901);
+  x.fillStyle='#e2d3b3'; x.fillRect(0,0,s,s);
+  const spot=(cx,cy,r,rot)=>{
+    for(const dx of [-s,0,s]) for(const dy of [-s,0,s]){
+      x.save(); x.translate(cx+dx,cy+dy); x.rotate(rot);
+      x.fillStyle='#b08a5e';
+      x.beginPath(); x.ellipse(0,0,r,r*0.75,0,0,7); x.fill();
+      x.strokeStyle='#241a12'; x.lineWidth=r*0.38; x.lineCap='round';
+      const n=3+Math.floor(rnd()*3);
+      for(let i=0;i<n;i++){
+        const a0=rnd()*6.28, alen=0.6+rnd()*0.9;
+        x.beginPath(); x.arc(0,0,r*1.05,a0,a0+alen); x.stroke();
+      }
+      x.restore();
+    }
+  };
+  for(let i=0;i<10;i++) spot(rnd()*s, rnd()*s, 16+rnd()*14, rnd()*3.14);
+  x.fillStyle='#241a12';
+  for(let i=0;i<14;i++){
+    const X=rnd()*s, Y=rnd()*s, r=2+rnd()*4;
+    for(const dx of [-s,0,s]) for(const dy of [-s,0,s]){
+      x.beginPath(); x.arc(X+dx,Y+dy,r,0,7); x.fill();
+    }
+  }
+  const img=new Image(); img.onload=()=>cb(img); img.src=c.toDataURL();
+}
+
+// three-tone diagonal stripes that read as satin thread when clipped to a band
+function stitchPattern(ctx, ink, t){
+  t = Math.max(2, Math.round(t));
+  const tile = document.createElement('canvas');
+  tile.width = 8; tile.height = t*3;
+  const tc = tile.getContext('2d');
+  tc.fillStyle = shade(ink,-0.22); tc.fillRect(0,0,8,t);
+  tc.fillStyle = ink;              tc.fillRect(0,t,8,t);
+  tc.fillStyle = shade(ink,0.30);  tc.fillRect(0,t*2,8,t);
+  const pat = ctx.createPattern(tile,'repeat');
+  pat.setTransform(new DOMMatrix().rotate(45));
+  return pat;
+}
+
+function drawDesign3(ctx, design, W, H, bg, forcedInk){
+  const {fam, w:weight} = fontSpec();
+  const ink = forcedInk || $('ink').value;
+  const widthFill = +$('widthFill').value/100;
+  const lineHF = +$('lineH').value/100;
+  const lsEm = +$('letterSp').value/100;
+  const placement = $('placement').value;
+  const curve = +$('curve3').value;
+  const borderPct = +$('border3').value/100;   // fraction of font size
+  const distress = +$('distress').value;
+  const pScale = +$('pScale').value/100;
+
+  ctx.clearRect(0,0,W,H);
+  if(bg){ ctx.fillStyle=bg; ctx.fillRect(0,0,W,H); }
+
+  const maxW = W*widthFill;
+  const lines = prepLines(design.lines);
+  const subScale = +$('subScale').value/100;
+  const subGapF = +$('subGap').value/100;   // fraction of the main font size
+  // big lines alone decide the main font size (width-fit); sub lines follow
+  let maxRatio=0, widestRatio=0;
+  for(const line of lines){
+    const lf0 = lineFontFor(line, fam, weight);
+    line._ratio = measureRatio(ctx, line, lf0.fam, lf0.w, lsEm);
+    if(!line.small){
+      maxRatio = Math.max(maxRatio, line._ratio);
+      widestRatio = Math.max(widestRatio, line._ratio);
+    }
+  }
+  if(!maxRatio){ // design made only of sub lines: promote them
+    for(const line of lines){ line.small=false; maxRatio = Math.max(maxRatio, line._ratio); }
+    widestRatio = maxRatio;
+  }
+  if(!maxRatio) return;
+  let fs = maxW/maxRatio;
+  const sigOn = $('sigOn').checked && $('sigText').value.trim();
+
+  // real ink heights, not phantom units: sub lines hug the line above them
+  const layout = f=>{
+    const items=[]; let yy=0, prevSize=0;
+    for(const line of lines){
+      let size = line.small ? f*subScale : f;
+      if(line.small && line._ratio*size > maxW) size = maxW/line._ratio;
+      if(!items.length){
+        // pin the first line's real ink top to the start of the block
+        const lf1 = lineFontFor(line, fam, weight);
+        setFont(ctx, size, lf1.fam, lf1.w, lsEm);
+        const m = ctx.measureText(line.segs.map(s=>s.text).join(''));
+        yy = m.actualBoundingBoxAscent || size*0.8;
+      }
+      else if(line.small) yy += size*0.9 + subGapF*f;
+      else yy += prevSize*lineHF;
+      items.push({line, size, y:yy});
+      prevSize = size;
+    }
+    const sigSize = Math.min(f*0.32, H*0.045);
+    const sigY = sigOn ? yy + Math.max(prevSize*0.65, sigSize*1.6) : 0;
+    const stackH = sigOn ? sigY + sigSize*0.3 : yy + prevSize*0.25;
+    return {items, sigY, sigSize, stackH};
+  };
+  let lay = layout(fs);
+  const sag0 = curve>0 ? widestRatio*fs*0.2*curve/100 : 0;
+  const avail = H*0.88 - sag0;
+  if(lay.stackH > avail){ fs *= avail/lay.stackH; lay = layout(fs); }
+
+  // everything text goes on a layer so distress can erase from it
+  const L = document.createElement('canvas'); L.width=W; L.height=H;
+  const lc = L.getContext('2d');
+  lc.textAlign='left'; lc.textBaseline='alphabetic';
+
+  // fill style: tiled pattern, or ink when no pattern
+  let fillStyle = ink;
+  if(patternImg){
+    const pat = lc.createPattern(patternImg, 'repeat');
+    const tile = Math.max(8, W*pScale);
+    pat.setTransform(new DOMMatrix().scale(tile/patternImg.naturalWidth));
+    fillStyle = pat;
+  }
+
+  const sag = curve>0 ? widestRatio*fs*0.2*curve/100 : 0;
+  const yStart = (placement==='top' ? H*0.07 : (H - lay.stackH - sag)/2) + sag;
+
+  const style = $('style3').value;
+  let bwPct = borderPct;
+  if(bwPct===0 && style!=='pattern') bwPct = 0.045; // outline styles never vanish
+
+  for(const item of lay.items){
+    const line = item.line, size = item.size;
+    const y = yStart + item.y;
+    const bw = bwPct*size;
+    const lf = lineFontFor(line, fam, weight);
+    if(line.small){
+      // sub lines are always plain solid text: no pattern, border, stitches, or arch
+      drawStraightLine(lc, line.segs, size, W, y, ink, ink, lf.fam, lf.w, lsEm);
+      continue;
+    }
+    const lineCurve = curve;
+    const strokeLine = (lw, styleOverride)=>drawCurvedLine(lc, line.segs, size, W, y, lineCurve,
+      ink, ink, lf.fam, lf.w, lsEm, {stroke:true, lineWidth:lw, styleOverride});
+    const fillLine = styleOverride=>drawCurvedLine(lc, line.segs, size, W, y, lineCurve,
+      ink, ink, lf.fam, lf.w, lsEm, {styleOverride});
+
+    if(style==='pattern-outline'){
+      fillLine(fillStyle);
+      strokeLine(bw*1.5, ink);   // border on top: the pattern can never cover it
+    }else if(style==='pattern'){
+      fillLine(fillStyle);
+    }else if(style==='outline'){
+      strokeLine(bw*1.4, ink);
+    }else{
+      // fake embroidery: dark keyline + shadow, then a satin band striped
+      // diagonally (thread direction), clipped to the band only
+      const band = bw*1.5;
+      lc.save();
+      lc.shadowColor='rgba(0,0,0,0.30)';
+      lc.shadowBlur=size*0.015; lc.shadowOffsetY=size*0.010;
+      strokeLine(band*1.12, shade(ink,-0.45));
+      lc.restore();
+      const B = document.createElement('canvas'); B.width=W; B.height=H;
+      const bc = B.getContext('2d');
+      bc.textAlign='left'; bc.textBaseline='alphabetic';
+      drawCurvedLine(bc, line.segs, size, W, y, lineCurve, ink, ink, lf.fam, lf.w, lsEm,
+        {stroke:true, lineWidth:band, styleOverride:'#000'});
+      bc.globalCompositeOperation='source-in';
+      bc.fillStyle = stitchPattern(bc, ink, band*0.22);
+      bc.fillRect(0,0,W,H);
+      lc.drawImage(B,0,0);
+    }
+  }
+  if(sigOn) drawSignature(lc, W, yStart+lay.sigY, lay.sigSize/0.32, ink);
+
+  applyDistress(lc, W, H, distress, design.lines.map(l=>l.raw).join('|'));
+
+  ctx.drawImage(L, 0, 0);
+}
+
+// distress: erase speckles + scratches from a layer (seeded per design text,
+// so the export color variants of one design carry identical wear)
+function applyDistress(lc, W, H, amount, seedStr){
+  if(!(amount>0)) return;
+  const rnd = mulberry32(seedFrom(seedStr) ^ amount);
+  lc.globalCompositeOperation='destination-out';
+  const specks = Math.floor(amount*45);
+  for(let i=0;i<specks;i++){
+    const x = rnd()*W, yy = rnd()*H;
+    const r = (0.0006 + rnd()*0.0038)*W;
+    lc.beginPath(); lc.arc(x,yy,r,0,7); lc.fill();
+  }
+  const scratches = Math.floor(amount/6);
+  for(let i=0;i<scratches;i++){
+    lc.save();
+    lc.translate(rnd()*W, rnd()*H);
+    lc.rotate(rnd()*Math.PI);
+    lc.fillRect(0, 0, (0.03+rnd()*0.12)*W, (0.0008+rnd()*0.0018)*W);
+    lc.restore();
+  }
+  lc.globalCompositeOperation='source-over';
+}
+
+// ---------- modes 4 + 5: block stack / symbol stack ----------
+function drawSymbol(ctx, type, cx, cy, box, color){
+  if(type==='none') return;
+  ctx.save(); ctx.fillStyle=color; ctx.translate(cx,cy);
+  if(type==='arrow-down') ctx.rotate(Math.PI);
+  ctx.beginPath();
+  if(type==='arrow-up' || type==='arrow-down'){
+    const h=box, hw=box*0.5, head=h*0.48, stem=box*0.34;
+    ctx.moveTo(0,-h/2); ctx.lineTo(hw,-h/2+head); ctx.lineTo(stem/2,-h/2+head);
+    ctx.lineTo(stem/2,h/2); ctx.lineTo(-stem/2,h/2); ctx.lineTo(-stem/2,-h/2+head);
+    ctx.lineTo(-hw,-h/2+head); ctx.closePath();
+  }else if(type==='heart'){
+    const s=box/2;
+    ctx.moveTo(0,s);
+    ctx.bezierCurveTo(-s*1.25, s*0.05, -s*0.85, -s, 0, -s*0.35);
+    ctx.bezierCurveTo(s*0.85, -s, s*1.25, s*0.05, 0, s);
+  }else if(type==='star'){
+    const R=box/2, r=R*0.42;
+    for(let i=0;i<10;i++){
+      const rad=(i%2===0)?R:r, a=-Math.PI/2 + i*Math.PI/5;
+      const px=Math.cos(a)*rad, py=Math.sin(a)*rad;
+      i===0 ? ctx.moveTo(px,py) : ctx.lineTo(px,py);
+    }
+    ctx.closePath();
+  }
+  ctx.fill(); ctx.restore();
+}
+
+function drawStack(ctx, design, W, H, bg, forcedInk, o){
+  const {fam, w:weight} = fontSpec();
+  const ink = forcedInk || $('ink').value;
+  const accent = forcedInk ? printSafe($('accent').value) : $('accent').value;
+  const widthFill = +$('widthFill').value/100;
+  const lineHF = (+$('lineH').value/100) * (o.tight||1);
+  const lsEm = +$('letterSp').value/100;
+  const placement = $('placement').value;
+  const subScale = +$('subScale').value/100;
+  const subGapF = +$('subGap').value/100;
+
+  ctx.clearRect(0,0,W,H);
+  if(bg){ ctx.fillStyle=bg; ctx.fillRect(0,0,W,H); }
+  ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+
+  const maxW = W*widthFill;
+  const lines = prepLines(design.lines);
+  if(!lines.length) return;
+  for(const line of lines){
+    const lf0 = lineFontFor(line, fam, weight);
+    setFont(ctx, 100, lf0.fam, lf0.w, lsEm);
+    const m = ctx.measureText(line.segs.map(s=>s.text).join(''));
+    line._ratio = (m.width/100) || 1;
+    line._asc = (Number.isFinite(m.actualBoundingBoxAscent) ? m.actualBoundingBoxAscent : 78)/100;
+    line._desc = (Number.isFinite(m.actualBoundingBoxDescent) ? m.actualBoundingBoxDescent : 6)/100;
+  }
+  if(!lines.some(l=>!l.small)) lines.forEach(l=>l.small=false);
+
+  const sigOn = $('sigOn').checked && $('sigText').value.trim();
+  const sym = (o.symbol && o.symbol.type!=='none') ? o.symbol : null;
+  const symBox0 = sym ? W*sym.scale : 0;
+
+  const layout = k=>{
+    // ink-based stacking: constant visible gap between lines regardless of
+    // each line's font size, and a fixed clearance under/over the symbol
+    const bigSizes = lines.map(l=> l.small ? 0 : Math.min(maxW/l._ratio, H*0.25)*k);
+    const refBig = Math.max(...bigSizes, 0) || H*0.1*k;
+    const gapBig = Math.max(0.015, lineHF-1) * refBig;
+    const symGap = W*0.035;
+    const items=[]; let yy=0, prevDesc=null, prevBig=0;
+    if(sym && sym.pos==='above'){
+      items.push({sym:true, y:0, h:symBox0*k});
+      yy = symBox0*k; prevDesc = 0;
+    }
+    let afterSym = items.length>0;
+    for(let i=0;i<lines.length;i++){
+      const line = lines[i];
+      let size = line.small ? subScale*(prevBig || refBig) : bigSizes[i];
+      if(line.small && line._ratio*size > maxW) size = maxW/line._ratio;
+      const gap = prevDesc===null ? 0
+        : afterSym ? symGap
+        : line.small ? subGapF*(prevBig||size)
+        : gapBig;
+      yy += (prevDesc===null?0:prevDesc) + gap + line._asc*size;
+      items.push({line, size, y:yy});
+      prevDesc = line._desc*size;
+      if(!line.small) prevBig = size;
+      afterSym = false;
+    }
+    if(sym && sym.pos==='below'){
+      yy += (prevDesc||0) + symGap;
+      items.push({sym:true, y:yy, h:symBox0*k});
+      yy += symBox0*k; prevDesc = 0;
+    }
+    const sigSize = Math.min((prevBig||refBig)*0.32, H*0.045);
+    const sigY = sigOn ? yy + (prevDesc||0) + sigSize*1.8 : 0;
+    const stackH = sigOn ? sigY + sigSize*0.4 : yy + (prevDesc||0) + H*0.01;
+    return {items, sigY, sigSize, stackH};
+  };
+  let lay = layout(1);
+  const avail = H*0.88;
+  if(lay.stackH > avail) lay = layout(avail/lay.stackH);
+
+  const yStart = placement==='top' ? H*0.07 : (H-lay.stackH)/2;
+
+  const L = document.createElement('canvas'); L.width=W; L.height=H;
+  const lc = L.getContext('2d');
+  lc.textAlign='left'; lc.textBaseline='alphabetic';
+
+  for(const item of lay.items){
+    if(item.sym){
+      drawSymbol(lc, sym.type, W/2, yStart+item.y+item.h/2, item.h, ink);
+      continue;
+    }
+    const lf = lineFontFor(item.line, fam, weight);
+    drawStraightLine(lc, item.line.segs, item.size, W, yStart+item.y, ink, accent, lf.fam, lf.w, lsEm);
+  }
+  if(sigOn) drawSignature(lc, W, yStart+lay.sigY, lay.sigSize/0.32, ink);
+  applyDistress(lc, W, H, o.distress||0, design.lines.map(l=>l.raw).join('|'));
+  ctx.drawImage(L,0,0);
+}
+
+function drawDesign4(ctx, d, W, H, bg, fi){
+  drawStack(ctx, d, W, H, bg, fi, {tight:0.92, distress:+$('distress4').value, symbol:null});
+}
+function drawDesign5(ctx, d, W, H, bg, fi){
+  drawStack(ctx, d, W, H, bg, fi, {tight:0.95, distress:+$('distress5').value,
+    symbol:{type:$('symType').value, pos:$('symPos').value, scale:+$('symScale').value/100}});
+}
+
+// ---------- render / export ----------
+async function ensureFonts(){
+  const {fam, w} = fontSpec();
+  const {fam:sf, w:sw2} = sigSpec();
+  const sub = subFontSpec();
+  const loads = [
+    document.fonts.load(`${w} 40px "${fam}"`),
+    document.fonts.load(`${sw2} 40px "${sf}"`),
+    document.fonts.load('400 40px "Graduate"'),
+    document.fonts.load('400 40px "Great Vibes"'),
+    document.fonts.ready
+  ];
+  if(sub) loads.push(document.fonts.load(`${sub.w} 40px "${sub.fam}"`));
+  try{ await Promise.all(loads); }catch(e){}
+}
+
+let designs = [];
+const MODE_INPUTS = {1:'input', 2:'input2', 3:'input3', 4:'input4', 5:'input5'};
+function currentDesigns(){
+  if(mode===2) return parseDesigns2($('input2').value);
+  return parseDesigns($(MODE_INPUTS[mode]).value);
+}
+function draw(ctx, d, W, H, bg, forcedInk){
+  ({1:drawDesign, 2:drawDesign2, 3:drawDesign3, 4:drawDesign4, 5:drawDesign5})[mode](ctx, d, W, H, bg, forcedInk);
+}
+function slug(d){
+  const lines = mode===2 ? [...d.top, ...d.bottom] : d.lines;
+  const t = lines.map(l=>l.raw).join(' ').replace(/[*_]/g,'');
+  return t.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40) || 'design';
+}
+
+async function render(){
+  await ensureFonts();
+  designs = currentDesigns();
+  const grid = $('grid'); grid.innerHTML='';
+  designs.forEach(d=>{
+    const card = document.createElement('div'); card.className='card';
+    const cv = document.createElement('canvas'); cv.width=500; cv.height=600;
+    draw(cv.getContext('2d'), d, 500, 600, shirtBg);
+    const bar = document.createElement('div'); bar.className='bar';
+    const name = document.createElement('span'); name.textContent = slug(d);
+    const btn = document.createElement('button'); btn.textContent='PNG';
+    btn.onclick=()=>exportOne(d);
+    bar.append(name,btn); card.append(cv,bar); grid.append(card);
+  });
+  $('status').textContent = designs.length + ' design' + (designs.length===1?'':'s');
+}
+
+// export pair: the selected ink color (print safe) + a soft white twin,
+// so there is always a light version for dark garments. White-ish ink
+// falls back to white + black instead of two identical files.
+function currentVariants(){
+  const sel = printSafe($('ink').value);
+  if(sel === SAFE_WHITE) return [
+    {suffix:'white', ink:SAFE_WHITE},
+    {suffix:'black', ink:SAFE_BLACK}
+  ];
+  const v = sel.replace('#','');
+  const dark = v.length===6 && [0,2,4].every(i=>parseInt(v.slice(i,i+2),16)<=48);
+  const suffix = dark ? 'black' : v;
+  return [
+    {suffix, ink:sel},
+    {suffix:'white', ink:SAFE_WHITE}
+  ];
+}
+
+function exportCanvas(d, ink){
+  const cv = document.createElement('canvas');
+  cv.width=EXPORT_W; cv.height=EXPORT_H;
+  draw(cv.getContext('2d'), d, EXPORT_W, EXPORT_H, null, ink);
+  return cv;
+}
+
+async function exportOne(d){
+  await ensureFonts();
+  for(const v of currentVariants()){
+    const cv = exportCanvas(d, v.ink);
+    const blob = await new Promise(r=>cv.toBlob(r,'image/png'));
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob); a.download=slug(d)+'-'+v.suffix+'.png'; a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 5000);
+    await new Promise(r=>setTimeout(r,300));
+  }
+}
+
+// ---- minimal store-only ZIP writer ----
+const CRC_TABLE = (()=>{ const t=new Uint32Array(256);
+  for(let n=0;n<256;n++){ let c=n; for(let k=0;k<8;k++) c = c&1 ? 0xEDB88320 ^ (c>>>1) : c>>>1; t[n]=c; }
+  return t; })();
+function crc32(buf){ let c=0xFFFFFFFF;
+  for(let i=0;i<buf.length;i++) c = CRC_TABLE[(c^buf[i])&0xFF] ^ (c>>>8);
+  return (c ^ 0xFFFFFFFF)>>>0; }
+
+function makeZip(files){
+  const enc = new TextEncoder();
+  let local=[], central=[], offset=0;
+  for(const f of files){
+    const nameB = enc.encode(f.name), crc = crc32(f.data), sz = f.data.length;
+    const lh = new Uint8Array(30+nameB.length);
+    const dv = new DataView(lh.buffer);
+    dv.setUint32(0,0x04034b50,true); dv.setUint16(4,20,true);
+    dv.setUint32(14,crc,true); dv.setUint32(18,sz,true); dv.setUint32(22,sz,true);
+    dv.setUint16(26,nameB.length,true);
+    lh.set(nameB,30);
+    local.push(lh, f.data);
+    const ch = new Uint8Array(46+nameB.length);
+    const dv2 = new DataView(ch.buffer);
+    dv2.setUint32(0,0x02014b50,true); dv2.setUint16(4,20,true); dv2.setUint16(6,20,true);
+    dv2.setUint32(16,crc,true); dv2.setUint32(20,sz,true); dv2.setUint32(24,sz,true);
+    dv2.setUint16(28,nameB.length,true);
+    dv2.setUint32(42,offset,true);
+    ch.set(nameB,46);
+    central.push(ch);
+    offset += lh.length + sz;
+  }
+  const centralSize = central.reduce((a,c)=>a+c.length,0);
+  const end = new Uint8Array(22);
+  const dv3 = new DataView(end.buffer);
+  dv3.setUint32(0,0x06054b50,true);
+  dv3.setUint16(8,files.length,true); dv3.setUint16(10,files.length,true);
+  dv3.setUint32(12,centralSize,true); dv3.setUint32(16,offset,true);
+  return new Blob([...local, ...central, end], {type:'application/zip'});
+}
+
+async function exportZip(){
+  await ensureFonts();
+  designs = currentDesigns();
+  if(!designs.length) return;
+  const files=[]; const used=new Set();
+  for(let i=0;i<designs.length;i++){
+    $('status').textContent = `Rendering ${i+1} / ${designs.length}…`;
+    let name = slug(designs[i]); let n=name, k=2;
+    while(used.has(n)){ n = name+'-'+k++; } used.add(n);
+    for(const v of currentVariants()){
+      const cv = exportCanvas(designs[i], v.ink);
+      const blob = await new Promise(r=>cv.toBlob(r,'image/png'));
+      const buf = new Uint8Array(await blob.arrayBuffer());
+      files.push({name:n+'-'+v.suffix+'.png', data:buf});
+    }
+  }
+  const zip = makeZip(files);
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(zip); a.download='designs.zip'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 10000);
+  $('status').textContent = `Done: ${files.length} PNGs zipped.`;
+}
+
+// ---------- uploads / tabs / wiring ----------
+$('fontUpload').addEventListener('change', async e=>{
+  const file = e.target.files[0]; if(!file) return;
+  const name = file.name.replace(/\.[^.]+$/,'').replace(/[^a-zA-Z0-9 _-]/g,'');
+  try{
+    const face = new FontFace(name, await file.arrayBuffer());
+    await face.load(); document.fonts.add(face);
+    const opt = document.createElement('option');
+    opt.value = name+'|400'; opt.textContent = name;
+    $('customGroup').appendChild(opt);
+    $('font').value = opt.value;
+    modeFonts[mode] = opt.value;
+    render();
+  }catch(err){ $('status').textContent = 'Could not load font: '+err.message; }
+});
+
+$('imgUpload').addEventListener('change', e=>{
+  const file = e.target.files[0]; if(!file) return;
+  const img = new Image();
+  img.onload = ()=>{ graphicImg = img; render(); };
+  img.src = URL.createObjectURL(file);
+});
+$('imgClear').onclick = ()=>{ graphicImg = null; $('imgUpload').value=''; render(); };
+
+$('patUpload').addEventListener('change', e=>{
+  const file = e.target.files[0]; if(!file) return;
+  const img = new Image();
+  img.onload = ()=>{ patternImg = img; render(); };
+  img.src = URL.createObjectURL(file);
+});
+$('patClear').onclick = ()=>{ patternImg = null; $('patUpload').value=''; render(); };
+
+// each mode keeps its own font pair; switching tabs restores it
+const modeFonts    = {1:'Bebas Neue|400', 2:'Bebas Neue|400', 3:'Graduate|400', 4:'Anton|400', 5:'Alfa Slab One|400'};
+const modeSubFonts = {1:'', 2:'', 3:'Great Vibes|400', 4:'', 5:''};
+
+function setMode(m){
+  mode = m;
+  document.body.dataset.mode = m;
+  for(let i=1;i<=5;i++) $('tab'+i).classList.toggle('sel', m===i);
+  $('font').value = modeFonts[m];
+  $('subFont').value = modeSubFonts[m];
+  render();
+}
+$('font').addEventListener('change', e=>{ modeFonts[mode] = e.target.value; });
+$('subFont').addEventListener('change', e=>{ modeSubFonts[mode] = e.target.value; });
+for(let i=1;i<=5;i++){ const n=i; $('tab'+n).onclick = ()=>setMode(n); }
+
+['input','input2','input3','font','case','widthFill','lineH','letterSp','placement','sigOn','sigText','sigFont','ink','accent',
+ 'curveTop','curveBottom','gScale','gOffset','topFit','bottomFit','shrinkBig','subGap',
+ 'pScale','curve3','border3','distress','style3','subFont','subScale',
+ 'input4','input5','distress4','distress5','symType','symPos','symScale']
+  .forEach(id=>{ $(id).addEventListener('input', ()=>render()); $(id).addEventListener('change', ()=>render()); });
+$('renderBtn').onclick = render;
+$('zipBtn').onclick = exportZip;
+
+buildSwatches();
+$('font').value = modeFonts[1];
+$('subFont').value = modeSubFonts[1];
+makeDefaultPattern(img=>{ if(!patternImg){ patternImg = img; if(mode===3) render(); } });
+document.fonts.ready.then(render);
+document.fonts.addEventListener('loadingdone', ()=>render());
+render();
+</script>
+</body>
+</html>
