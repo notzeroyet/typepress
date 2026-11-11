@@ -5,7 +5,7 @@ ready transparent PNGs in bulk.
 
 **Use it online, nothing to download:** https://notzeroyet.com/typepress/
 
-**Video tutorial:** coming soon.
+**Video tutorial:** [Watch the TypePress walkthrough on YouTube](https://youtu.be/VLDTeq4Kgno)
 
 ## Open your own copy
 
